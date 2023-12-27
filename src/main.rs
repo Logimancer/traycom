@@ -62,4 +62,5 @@ fn main() {
             serial_device_comm_number(serial_device.Id().unwrap()), 
             serial_device.Name().unwrap());
     }
-}  
+} 
+//TODO: Write tray function 
