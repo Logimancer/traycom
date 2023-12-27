@@ -38,7 +38,7 @@ fn main() {
     //Print serial device names
     for serial_device in serial_devices {
         println!("{}", serial_device.Name().unwrap());
-        println!("{}", serial_device.Id().);
+        //println!("{}", serial_device.Id().);
         //for serial_device_properties in serial_device.Properties() {
         //    println!("{}", serial_device_properties.Lookup("Name").unwrap() );
         //}
