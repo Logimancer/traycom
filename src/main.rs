@@ -58,6 +58,8 @@ fn main() {
     let serial_devices_information_collection: DeviceInformationCollection = 
     get_serial_devices();
     for serial_device in serial_devices_information_collection {
-        println!("{} {}", serial_device_comm_number(serial_device.Id().unwrap()), serial_device.Name().unwrap());
+        println!("{} {}", 
+            serial_device_comm_number(serial_device.Id().unwrap()), 
+            serial_device.Name().unwrap());
     }
 }  
