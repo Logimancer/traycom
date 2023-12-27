@@ -6,7 +6,7 @@ use windows::{Devices::{
         }
     }, 
     Foundation::IAsyncOperation, 
-    core::Error
+    core::{Error, HSTRING}
 };
 use async_std::task;
 
@@ -16,31 +16,46 @@ pub async fn serial_ports_device_info(
     -> DeviceInformationCollection {
         let response: Result<DeviceInformationCollection, Error> = 
             deviceinformation.await;
-        return response.unwrap();
+        response.unwrap()
 }
 
-fn get_serial_devices() -> DeviceInformationCollection {
-    let deviceid: Result<windows::core::HSTRING, Error> = 
-        SerialDevice::GetDeviceSelector();
+//Async wrapper for getting port number
+async fn deviceport(serial_device: IAsyncOperation<SerialDevice>) -> SerialDevice {
+    let response: Result<SerialDevice, Error> = 
+        serial_device.await;
+    response.unwrap()
+}
+
+fn get_serial_devices() -> DeviceInformationCollection  {
+    let deviceid: windows::core::HSTRING = 
+        SerialDevice::GetDeviceSelector().unwrap();
+
+    //Get device information for name
     let deviceinformation: Result<IAsyncOperation<DeviceInformationCollection>, Error> = 
-        DeviceInformation::FindAllAsyncAqsFilter(&deviceid.unwrap());
+        DeviceInformation::FindAllAsyncAqsFilter(&deviceid);
     let dev_info_collection: DeviceInformationCollection = 
         task::block_on(serial_ports_device_info(
             deviceinformation.unwrap()
         )
     );
-    return dev_info_collection;
+    dev_info_collection
+}
+
+fn serial_device_comm_number(deviceid: HSTRING) -> windows::core::HSTRING {
+    let serial_device_async = SerialDevice::FromIdAsync(&deviceid);
+    let serial_device = task::block_on(deviceport(serial_device_async.unwrap()));
+    let serial_return = serial_device.PortName().unwrap();
+    serial_return 
 }
 
 fn main() {
-    let serial_devices: DeviceInformationCollection = get_serial_devices();
-    
+    let serial_devices_information_collection: DeviceInformationCollection = get_serial_devices();
+    //let port_name: windows::core::HSTRING = serial_devices.1; 
     //Print serial device names
-    for serial_device in serial_devices {
-        println!("{}", serial_device.Name().unwrap());
-        //println!("{}", serial_device.Id().);
-        //for serial_device_properties in serial_device.Properties() {
-        //    println!("{}", serial_device_properties.Lookup("Name").unwrap() );
+    for serial_device in serial_devices_information_collection {
+        println!("{} {}", serial_device_comm_number(serial_device.Id().unwrap()), serial_device.Name().unwrap());
+//        for serial_device_properties in serial_device.Properties() {
+//            println!("{}", serial_device_properties.Lookup("Name").unwrap() );
         //}
     }
 
