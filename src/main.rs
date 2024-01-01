@@ -1,4 +1,4 @@
-#![windows_subsystem = "windows"] //keeps a console from opening
+//#![windows_subsystem = "windows"] //keeps a console from opening
 use windows::{Devices::{
     SerialCommunication::SerialDevice, 
     Enumeration::{
@@ -64,20 +64,34 @@ fn load_icon(path: &std::path::Path) -> tray_icon::Icon {
             .expect("Failed to open icon path")
             .into_rgba8();
         let (width, height) = image.dimensions();
-        let rgba = image.into_raw();
+        let rgba: Vec<u8> = image.into_raw();
         (rgba, width, height)
     };
     tray_icon::Icon::from_rgba(icon_rgba, icon_width, icon_height).expect("Failed to open icon")
+}
 
-}fn main() {    
+fn enumerate_serial_devices(serial_device_information_collection: DeviceInformationCollection) -> 
+    Vec<(HSTRING, HSTRING)> {    
+    let mut serial_devices:Vec<(HSTRING, HSTRING)> = Vec::new(); 
+    for serial_device in serial_device_information_collection {
+        let serial_device_id = serial_device_comm_number(
+            serial_device.Id().unwrap());
+        let serial_device_name = serial_device.Name().unwrap();
+        serial_devices.push((serial_device_id, serial_device_name));
+    }
+    serial_devices
+}
+
+
+fn main() {    
     //TODO: Functionalize this so it can be called each time we need to update the port information
     let serial_devices_information_collection: DeviceInformationCollection = 
     get_serial_devices();
-    for serial_device in serial_devices_information_collection {
-        //TODO: Create iterator for device 
-        println!("{} {}", 
-            serial_device_comm_number(serial_device.Id().unwrap()), 
-            serial_device.Name().unwrap());
+    //enumerate serial devices
+    let serial_devices: Vec<(HSTRING, HSTRING)> = 
+        enumerate_serial_devices(serial_devices_information_collection);
+    for serial_device in serial_devices {
+        println!("{} {}", serial_device.0, serial_device.1)
     }
     let path: &str = "icon\\icon.ico";
     let icon: tray_icon::Icon = load_icon(std::path::Path::new(path));
