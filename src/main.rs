@@ -82,13 +82,12 @@ fn enumerate_serial_devices(serial_device_information_collection: DeviceInformat
     serial_devices
 }
 
-
 fn main() {    
     //TODO: Functionalize this so it can be called each time we need to update the port information
     let serial_devices_information_collection: DeviceInformationCollection = 
     get_serial_devices();
     //enumerate serial devices
-    let serial_devices: Vec<(HSTRING, HSTRING)> = 
+    let serial_devices = 
         enumerate_serial_devices(serial_devices_information_collection);
     for serial_device in serial_devices {
         println!("{} {}", serial_device.0, serial_device.1)
