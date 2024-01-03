@@ -83,27 +83,10 @@ fn enumerate_serial_devices(serial_device_information_collection: DeviceInformat
 }
 
 fn main() {    
+    let serial_devices_information_collection: DeviceInformationCollection = 
+    get_serial_devices();
 
-    //enumerate serial devices
-    let mut number_of_serial_devices: i32 = 0;
-    let menu_items_ports: Vec<MenuItem> = Vec::new();
-    fn refresh_serial_ports(mut menu_items_ports: Vec<MenuItem>/* serial_device_information_collection: DeviceInformationCollection*/)  
-        -> Vec<MenuItem> {
-        let serial_devices_information_collection: DeviceInformationCollection = 
-        get_serial_devices();
-        let serial_devices: Vec<(HSTRING, HSTRING)> = 
-        enumerate_serial_devices(serial_devices_information_collection);
-        for serial_device in serial_devices {
-            //iterate through each serial device and add to menu
-            //println!("{} {}", serial_device.0, serial_device.1);
-            let current_menu_item = serial_device.0.to_string() + " " + &serial_device.1.to_string();
-            menu_items_ports.push(MenuItem::new(current_menu_item, false, Option::None));
-            //number_of_serial_devices = number_of_serial_devices + 1;
-        }
-        menu_items_ports
-    }
-    //let number_of_serial_devices_str: String = 
-    //    "Number of ports: ".to_owned() + &number_of_serial_devices.to_string();
+
     //setup icon for tray
     let path: &str = "icon\\icon.ico";
     let icon: tray_icon::Icon = load_icon(std::path::Path::new(path));
@@ -115,43 +98,66 @@ fn main() {
         
     //Setup tray menu and tray menu items
     //TODO: make this a function where you pass in the menu struct, it clears it and adds new
+    struct MenuItemsStruct {
+        menu: Menu,
+        number_of_serial_devices: i32,
+        refresh_id_number: String,
+        quit_id_number: String
+    }
     let menu: Menu = Menu::new();    
-     //Seperator definition
-    let menu_item_seperator = PredefinedMenuItem::separator();
-    //Refresh definition
-    let menu_item_refresh = MenuItem::new(
-        "Refresh", true, Option::None);
-    //Quit definition
-    let menu_item_quit: MenuItem = MenuItem::new(
-            "Quit", true, Option::None);
-    //Add control items after ports to menu
-    let _ = menu.append_items(&[&menu_item_seperator, 
+    fn refresh_menu_ports(menu: Menu, serial_devices_information_collection: DeviceInformationCollection) -> 
+        MenuItemsStruct {
+        //enumerate serial devices
+        let serial_devices: Vec<(HSTRING, HSTRING)> = 
+            enumerate_serial_devices(serial_devices_information_collection);
+        let mut number_of_serial_devices: i32 = 0;
+        let mut menu_items: Vec<MenuItem> = Vec::new();
+        for serial_device in serial_devices {
+            //iterate through each serial device and add to menu
+            //println!("{} {}", serial_device.0, serial_device.1);
+            let current_menu_item = serial_device.0.to_string() + " " + &serial_device.1.to_string();
+            menu_items.push(MenuItem::new(current_menu_item, false, Option::None));
+            number_of_serial_devices = number_of_serial_devices + 1;
+        }
+        //Add Ports to menu
+        for port in menu_items {
+            let _ = menu.append(&port);    
+        }
+        //Seperator definition
+        let menu_item_seperator = PredefinedMenuItem::separator();
+        //Refresh definition
+        let menu_item_refresh = MenuItem::new(
+            "Refresh", true, Option::None);
+        //Quit definition
+        let menu_item_quit: MenuItem = MenuItem::new(
+                "Quit", true, Option::None);
+        //Add control items after ports to menu
+        let _ = menu.append_items(&[&menu_item_seperator, 
                                     &menu_item_refresh,
                                     &menu_item_seperator,
-                                    &menu_item_quit]);   
-    fn build_menu_ports(menu: Menu, menu_items_ports: Vec<MenuItem>) -> Menu {
-        //Add Ports to menu
-        for port in menu_items_ports {
-            let _ = menu.prepend(&port);    
+                                    &menu_item_quit]);
+        MenuItemsStruct {
+            menu: menu, 
+            number_of_serial_devices: number_of_serial_devices,
+            refresh_id_number: menu_item_refresh.id().0.to_string(),
+            quit_id_number: menu_item_quit.id().0.to_string()
         }
-        menu
+    } 
+
+    //Create initial menu
+    let menu_updated = refresh_menu_ports(menu, serial_devices_information_collection);
+    println!("menu quit id sting {}", menu_updated.quit_id_number);   
+    for item in menu_updated.menu.items().into_iter() {
+        println!("{}", item.id().0);
     }
-    fn remove_current_menu_ports(menu: Menu, mut menu_items_ports: Vec<MenuItem>) {
-        //remove ports
-        for port in &menu_items_ports {
-            let _ = menu.remove(&*port);
-        }
-        menu_items_ports.clear();
-        let _ = build_menu_ports(menu, refresh_serial_ports(menu_items_ports));
-    }
-    let menu_items_ports = refresh_serial_ports(menu_items_ports);
-    let _ = build_menu_ports(menu.clone(), menu_items_ports.clone());
-    
+    let number_of_serial_devices_str: String = 
+        "Number of ports: ".to_owned() + &menu_updated.number_of_serial_devices.to_string();
+
     //display tray icon
     let _tray_icon = Some(
         TrayIconBuilder::new()
-            .with_menu(Box::new(menu.clone()))
-            .with_tooltip("Serial Ports"/*&number_of_serial_devices_str*/) //number of comports on hover
+            .with_menu(Box::new(menu_updated.menu))
+            .with_tooltip(&number_of_serial_devices_str) //number of comports on hover
             .with_icon(icon)
             .build()
             .unwrap(),
@@ -168,11 +174,13 @@ fn main() {
             println!("{event:?}");
             
             //Refresh action
-            if event.id.0 == menu_item_refresh.id().0 {
-                let _ = remove_current_menu_ports(menu.clone(), menu_items_ports.clone());    
+            if event.id.0 == menu_updated.refresh_id_number {
+                for item in menu_updated.menu.items().into_iter() {
+                    menu_updated.menu.remove(item.as_menuitem())
+                }
             }
             //Quit action
-            if event.id.0 == menu_item_quit.id().0 {
+            if event.id.0 == menu_updated.quit_id_number {
                event_loop.exit(); 
             }
         }
