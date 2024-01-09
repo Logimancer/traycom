@@ -15,9 +15,8 @@ use tray_icon::{
     TrayIconBuilder};
 use winit::event_loop::{ControlFlow, EventLoopBuilder};
 
-//TODO: Trow window popup error if icon file not found
+//TODO: Throw window popup error if icon file not found
 //TODO: String possible extra COM# in description
-//TODO: Icon or executable
 //TODO: Clean code with if let's instead of let _ = and Ok() for Result<>
 
 //Async wrapper for getting device info
