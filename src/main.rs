@@ -15,9 +15,9 @@ use tray_icon::{
     TrayIconBuilder};
 use winit::event_loop::{ControlFlow, EventLoopBuilder};
 
-//TODO: Throw window popup error if icon file not found
 //TODO: String possible extra COM# in description
-//TODO: Clean code with if let's instead of let _ = and Ok() for Result<>
+//TODO (next version): Create log file function for errors
+//TODO (next version): Clean code with if let's instead of let _ = and Ok() for Result<>
 
 //Async wrapper for getting device info
 pub async fn serial_ports_device_info(
