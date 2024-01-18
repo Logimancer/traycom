@@ -178,12 +178,12 @@ fn remove_com_from_hstring(hstring: &HSTRING,
     //Add '(', ' (' or ' ' to the begining of substring_to_remove if it exists
     //TODO: there is a much more clever way to do this!
     if str.chars().nth(location_of_com_in_hstring - 1).unwrap() == '(' {
-        substring_to_remove.insert_str(0, "(");
+        substring_to_remove.insert(0, '(');
         if str.chars().nth(location_of_com_in_hstring - 2).unwrap() ==  ' ' {
-            substring_to_remove.insert_str(0, " ");
+            substring_to_remove.insert(0, ' ');
         }
     } else if str.chars().nth(location_of_com_in_hstring - 1).unwrap() ==  ' ' {
-        substring_to_remove.insert_str(0, " ");
+        substring_to_remove.insert(0, ' ');
     }
     //build the substring to remove from the HSTRING passed in
     let end_of_slice_to_remove: usize = location_of_com_in_hstring + 3;
