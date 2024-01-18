@@ -14,15 +14,16 @@ use tray_icon::{
     menu::{Menu, MenuEvent, MenuItem, PredefinedMenuItem, IsMenuItem}, 
     TrayIconBuilder};
 use winit::event_loop::{ControlFlow, EventLoopBuilder};
+use std::{fmt::Error as stdError, usize};
 
-//TODO: String possible extra COM# in description
 //TODO (next version): Create log file function for errors
 //TODO (next version): Clean code with if let's instead of let _ = and Ok() for Result<>
 
 //Async wrapper for getting device info
 pub async fn serial_ports_device_info(
     deviceinformation: IAsyncOperation<DeviceInformationCollection>) 
-    -> DeviceInformationCollection {
+    -> DeviceInformationCollection
+{
         let response: Result<DeviceInformationCollection, Error> = 
             deviceinformation.await;
         response.unwrap()
@@ -30,14 +31,16 @@ pub async fn serial_ports_device_info(
 
 //Async wrapper for getting port number
 pub async fn deviceport(serial_device: IAsyncOperation<SerialDevice>) 
-    -> SerialDevice {
+    -> SerialDevice 
+{
     let response: Result<SerialDevice, Error> = 
         serial_device.await;
     response.unwrap()
 }
 
 //Create Device information from SerialDevices
-fn get_serial_devices() -> DeviceInformationCollection  {
+fn get_serial_devices() -> DeviceInformationCollection
+{
     let deviceid: windows::core::HSTRING = 
         SerialDevice::GetDeviceSelector().unwrap();
     //Get device information for name
@@ -52,7 +55,8 @@ fn get_serial_devices() -> DeviceInformationCollection  {
     dev_info_collection
 }
 
-fn refresh_serial_ports() -> Vec<MenuItem> {
+fn refresh_serial_ports() -> Vec<MenuItem> 
+{
     let mut menu_items_ports: Vec<MenuItem> = Vec::new();
     let serial_devices_information_collection: 
         DeviceInformationCollection = get_serial_devices();
@@ -72,19 +76,38 @@ fn refresh_serial_ports() -> Vec<MenuItem> {
 }
 
 fn enumerate_serial_devices(
-    serial_device_information_collection: DeviceInformationCollection) -> 
-    Vec<(HSTRING, HSTRING)> {    
+    serial_device_information_collection: DeviceInformationCollection) 
+    -> Vec<(HSTRING, HSTRING)> 
+{    
     let mut serial_devices:Vec<(HSTRING, HSTRING)> = Vec::new(); 
     for serial_device in serial_device_information_collection {
         let serial_device_id = serial_device_comm_number(
             serial_device.Id().unwrap());
-        let serial_device_name = serial_device.Name().unwrap();
+        let mut serial_device_name = serial_device.Name().unwrap();
+        //Remove COM from device name if necessary
+        if serial_device_name.to_string().contains("COM") {
+            let com_location = match str_in_hstring_location(
+                &serial_device_name, "COM") {
+                Ok(return_usize) => return_usize,
+                Err(error) => panic!("No match between string and HSTRING: {:?}",
+                                            error)
+            };
+            serial_device_name = match remove_com_from_hstring(
+                &serial_device_name,
+                com_location) {
+                    Ok(return_hstring) => return_hstring,
+                    Err(return_hstring_error) => panic!(
+                        "Something wrong in remove_com_from_hstring: {:?}",
+                        return_hstring_error)
+            };
+        }
         serial_devices.push((serial_device_id, serial_device_name));
     }
     serial_devices
 }
 
-fn serial_device_comm_number(deviceid: HSTRING) -> windows::core::HSTRING {
+fn serial_device_comm_number(deviceid: HSTRING) -> windows::core::HSTRING 
+{
     let serial_device_async: Result<IAsyncOperation<SerialDevice>, Error> = 
         SerialDevice::FromIdAsync(&deviceid);
     let serial_device: SerialDevice = 
@@ -96,7 +119,9 @@ fn serial_device_comm_number(deviceid: HSTRING) -> windows::core::HSTRING {
     serial_return 
 }
     
-fn build_menu_ports(menu: &Menu, menu_items_ports: Vec<MenuItem>) -> Menu {
+fn build_menu_ports(menu: &Menu, 
+                    menu_items_ports: Vec<MenuItem>) -> Menu 
+{
     //Add Ports to menu
     for port in menu_items_ports {
         let _ = menu.prepend(&port);
@@ -104,7 +129,8 @@ fn build_menu_ports(menu: &Menu, menu_items_ports: Vec<MenuItem>) -> Menu {
     menu.clone()
 }
 
-fn remove_current_menu_ports(menu: &Menu) {
+fn remove_current_menu_ports(menu: &Menu) 
+{
     let i = 1;
     for item in menu.items() {
         if item.as_menuitem().is_none() { break; }
@@ -122,10 +148,57 @@ fn load_icon(path: &std::path::Path) -> tray_icon::Icon {
         let rgba: Vec<u8> = image.into_raw();
         (rgba, width, height)
     };
-    tray_icon::Icon::from_rgba(icon_rgba, icon_width, icon_height).expect("Failed to open icon")
+    tray_icon::Icon::from_rgba(icon_rgba, icon_width, 
+                               icon_height).expect("Failed to open icon")
 }
 
-fn main() {    
+//returns location of string slice in HSTRING
+fn str_in_hstring_location(hstring: &HSTRING, 
+                           string_slice: &str) -> Result<usize, stdError> 
+{
+    let string: String = hstring.to_string();
+    let str: &str = string.as_str();
+    if str.contains(string_slice) {
+        Ok(str.find(string_slice).unwrap())
+    }
+    else {
+        Err(stdError)
+    }
+}
+
+//removes "(COM*)" from hstring
+fn remove_com_from_hstring(hstring: &HSTRING,
+                           location_of_com_in_hstring: usize)
+                           -> Result<HSTRING, stdError> 
+{
+    let string: String = hstring.to_string();
+    let str: &str = string.as_str();
+    let mut substring_to_remove: String = str[location_of_com_in_hstring ..
+            location_of_com_in_hstring + 3].to_string();
+    //Add '(', ' (' or ' ' to the begining of substring_to_remove if it exists
+    //TODO: there is a much more clever way to do this!
+    if str.chars().nth(location_of_com_in_hstring - 1).unwrap() == '(' {
+        substring_to_remove.insert_str(0, "(");
+        if str.chars().nth(location_of_com_in_hstring - 2).unwrap() ==  ' ' {
+            substring_to_remove.insert_str(0, " ");
+        }
+    } else if str.chars().nth(location_of_com_in_hstring - 1).unwrap() ==  ' ' {
+        substring_to_remove.insert_str(0, " ");
+    }
+    //build the substring to remove from the HSTRING passed in
+    let end_of_slice_to_remove: usize = location_of_com_in_hstring + 3;
+    for char_instance in str[end_of_slice_to_remove ..].chars() {
+        if char_instance.is_numeric() ||
+           char_instance == ')' {
+            substring_to_remove.push(char_instance);
+           }
+    }
+    //remove substring from HSTRING passed in and return
+    Ok(HSTRING::from(str.replace(substring_to_remove.as_str(), "")))
+}
+
+fn main() 
+{    
     //setup tray icon
     let path: &str = "icon\\icon.ico";
     let icon: tray_icon::Icon = load_icon(std::path::Path::new(path));
@@ -137,9 +210,9 @@ fn main() {
     //Setup tray menu and tray menu items
     let menu: Menu = Menu::new();
     //Seperator definition
-    let menu_item_seperator = PredefinedMenuItem::separator();
+    let menu_item_seperator: PredefinedMenuItem = PredefinedMenuItem::separator();
     //Refresh definition
-    let menu_item_refresh = MenuItem::new(
+    let menu_item_refresh: MenuItem = MenuItem::new(
         "Refresh", true, Option::None);
     //Quit definition
     let menu_item_quit: MenuItem = MenuItem::new(
@@ -159,7 +232,7 @@ fn main() {
     let _tray_icon = Some(
         TrayIconBuilder::new()
             .with_menu(Box::new(menu.clone()))
-            .with_tooltip("Serial Port Status") 
+            .with_tooltip("Traycom") 
             .with_icon(icon)
             .build()
             .unwrap(),
