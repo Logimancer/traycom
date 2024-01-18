@@ -232,7 +232,7 @@ fn main()
     let _tray_icon = Some(
         TrayIconBuilder::new()
             .with_menu(Box::new(menu.clone()))
-            .with_tooltip("Traycom") 
+            .with_tooltip("TrayCom") 
             .with_icon(icon)
             .build()
             .unwrap(),
