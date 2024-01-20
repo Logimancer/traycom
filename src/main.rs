@@ -17,7 +17,7 @@ use winit::event_loop::{ControlFlow, EventLoopBuilder};
 use std::{fmt::Error as stdError, usize};
 
 //TODO (next version): Create log file function for errors
-//TODO (next version): Clean code with if let's instead of let _ = and Ok() for Result<>
+//TODO (next version): Make code more rusty
 
 //Async wrapper for getting device info
 pub async fn serial_ports_device_info(
@@ -81,12 +81,12 @@ fn enumerate_serial_devices(
 {    
     let mut serial_devices:Vec<(HSTRING, HSTRING)> = Vec::new(); 
     for serial_device in serial_device_information_collection {
-        let serial_device_id = serial_device_comm_number(
+        let serial_device_id: HSTRING = serial_device_comm_number(
             serial_device.Id().unwrap());
-        let mut serial_device_name = serial_device.Name().unwrap();
+        let mut serial_device_name: HSTRING = serial_device.Name().unwrap();
         //Remove COM from device name if necessary
         if serial_device_name.to_string().contains("COM") {
-            let com_location = match str_in_hstring_location(
+            let com_location: usize = match str_in_hstring_location(
                 &serial_device_name, "COM") {
                 Ok(return_usize) => return_usize,
                 Err(error) => panic!("No match between string and HSTRING: {:?}",
@@ -229,7 +229,7 @@ fn main()
     let _ = menu.append_items(&persistant_menu_items);
 
     //display tray icon
-    let _tray_icon = Some(
+    let _tray_icon: Option<tray_icon::TrayIcon> = Some(
         TrayIconBuilder::new()
             .with_menu(Box::new(menu.clone()))
             .with_tooltip("TrayCom") 
