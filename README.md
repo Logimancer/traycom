@@ -1,6 +1,6 @@
 # TrayCom
 
-## A system tray application to show which COM ports are currently available
+## A system tray utility to show which COM ports are currently available
 
 The target user for this program is anyone who needs fast access to com port information, e.g. controls engineers and technicians that are tired of opening windows device manager every time they plug in a new USB to RS-232/485 converter.
 
@@ -23,7 +23,7 @@ TrayCom in system tray (starts up automatically on login):
 
 ![system tray](https://github.com/Logimancer/traycom/assets/151105595/cf868700-e65a-4931-805e-7bd3284e3ca3)
 
-Right-clicking on the TrayCom icon will show current connected devices.
+Right-clicking on the TrayCom icon will show currently connected COM devices.
 
 This is what TrayCom shows with no COM ports present on the computer. Clicking the "Refresh" menu item will check for new COM ports:
 
