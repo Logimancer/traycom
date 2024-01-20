@@ -34,6 +34,7 @@ After clicking the "Refresh" menu item, TrayCom now shows the two new USB to RS2
 ![ports](https://github.com/Logimancer/traycom/assets/151105595/50891204-906a-429a-b49e-8e07706bd888)
 
 *Note: there may be COM ports on the list that are not external to the computer.* 
+
 An example of this is the [Intel Active Management Technology](https://en.wikipedia.org/wiki/Intel_Active_Management_Technology) ["SOL" device](https://en.wikipedia.org/wiki/Serial_over_LAN), which usually reports back as COM3.
 
 All USB devices that have been tested so far show "USB" in their listing in the TrayCom menu.
