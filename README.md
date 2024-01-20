@@ -39,4 +39,4 @@ An example of this is the [Intel Active Management Technology](https://en.wikipe
 
 All USB devices that have been tested so far show "USB" in their listing in the TrayCom menu.
 
-This can be useful in determining which COM ports are able to be used for serial connections with external equipment (traditional USB to Serial devices, for instance).
+This can be useful in determining which COM ports are able to be used for serial connections with external equipment (traditional USB to serial devices, for instance).
