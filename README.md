@@ -1,6 +1,6 @@
 # TrayCom
 
-## A system tray application to show which COM ports are currently available.
+## A system tray application to show which COM ports are currently available
 
 The target user for this program is anyone who needs fast access to com port information, e.g. controls engineers and technicians that are tired of opening windows device manager every time they plug in a new USB to RS-232/485 converter.
 
