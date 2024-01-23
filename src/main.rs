@@ -1,8 +1,8 @@
-#![warn(
+/*#![warn(
     clippy::all,
     clippy::pedantic,
-    //clippy::cargo,
-)]
+)]*/
+
 #![windows_subsystem = "windows"] //keeps a console from opening
 use async_std::task;
 use std::{fmt::Error as stdError, usize};
@@ -66,7 +66,7 @@ fn enumerate_serial_devices(
 ) -> Vec<(HSTRING, HSTRING)> {
     let mut serial_devices: Vec<(HSTRING, HSTRING)> = Vec::new();
     for serial_device in serial_device_information_collection {
-        let serial_device_id: HSTRING = serial_device_comm_number(serial_device.Id().unwrap());
+        let serial_device_id: HSTRING = serial_device_comm_number(&serial_device.Id().unwrap());
         let mut serial_device_name: HSTRING = serial_device.Name().unwrap();
         //Remove COM from device name if necessary
         if serial_device_name.to_string().contains("COM") {
@@ -74,21 +74,16 @@ fn enumerate_serial_devices(
                 Ok(return_usize) => return_usize,
                 Err(error) => panic!("No match between string and HSTRING: {error:?}"),
             };
-            serial_device_name = match remove_com_from_hstring(&serial_device_name, com_location) {
-                Ok(return_hstring) => return_hstring,
-                Err(return_hstring_error) => {
-                    panic!("Something wrong in remove_com_from_hstring: {return_hstring_error:?}")
-                }
-            };
+            serial_device_name = remove_com_from_hstring(&serial_device_name, com_location);
         }
         serial_devices.push((serial_device_id, serial_device_name));
     }
     serial_devices
 }
 
-fn serial_device_comm_number(deviceid: HSTRING) -> windows::core::HSTRING {
+fn serial_device_comm_number(deviceid: &HSTRING) -> windows::core::HSTRING {
     let serial_device_async: Result<IAsyncOperation<SerialDevice>, Error> =
-        SerialDevice::FromIdAsync(&deviceid);
+        SerialDevice::FromIdAsync(deviceid);
     let serial_device: SerialDevice = task::block_on(deviceport(serial_device_async.unwrap()));
     let serial_return: HSTRING = serial_device.PortName().unwrap();
     serial_return
@@ -131,33 +126,38 @@ fn str_in_hstring_location(hstring: &HSTRING, string_slice: &str) -> Result<usiz
 }
 
 //removes "(COM*)" from hstring
-fn remove_com_from_hstring(
-    hstring: &HSTRING,
-    location_of_com_in_hstring: usize,
-) -> Result<HSTRING, stdError> {
-    let string: String = hstring.to_string();
-    let str: &str = string.as_str();
-    let mut substring_to_remove: String =
-        str[location_of_com_in_hstring..location_of_com_in_hstring + 3].to_string();
+//I can't see why this is returning a Result as no error is ever returned
+//unless this was for some future use that hasn't been added yet?
+fn remove_com_from_hstring(hstring: &HSTRING, location_of_com_in_hstring: usize) -> HSTRING {
+    let hstring = hstring.to_string();
+    let mut substring_to_remove =
+        hstring[location_of_com_in_hstring..location_of_com_in_hstring + 3].to_string();
     //Add '(', ' (' or ' ' to the begining of substring_to_remove if it exists
     //TODO: there is a much more clever way to do this!
-    if str.chars().nth(location_of_com_in_hstring - 1).unwrap() == '(' {
-        substring_to_remove.insert(0, '(');
-        if str.chars().nth(location_of_com_in_hstring - 2).unwrap() == ' ' {
+    // I didn't really clean up the algorithm, just cleaned up the code to make it a bit more rusty
+    if let Some(loc) = &hstring.chars().nth(location_of_com_in_hstring - 1) {
+        if *loc == '(' {
+            substring_to_remove.insert(0, '(');
+            if let Some(space_loc) = &hstring.chars().nth(location_of_com_in_hstring - 2) {
+                // && space_loc == ' ' { These types of let expressions aren't stable yet
+                if *space_loc == ' ' {
+                    substring_to_remove.insert(0, ' ');
+                }
+            }
+        } else if *loc == ' ' {
             substring_to_remove.insert(0, ' ');
         }
-    } else if str.chars().nth(location_of_com_in_hstring - 1).unwrap() == ' ' {
-        substring_to_remove.insert(0, ' ');
     }
+
     //build the substring to remove from the HSTRING passed in
     let end_of_slice_to_remove: usize = location_of_com_in_hstring + 3;
-    for char_instance in str[end_of_slice_to_remove..].chars() {
+    for char_instance in hstring[end_of_slice_to_remove..].chars() {
         if char_instance.is_numeric() || char_instance == ')' {
             substring_to_remove.push(char_instance);
         }
     }
     //remove substring from HSTRING passed in and return
-    Ok(HSTRING::from(str.replace(substring_to_remove.as_str(), "")))
+    HSTRING::from(hstring.replace(substring_to_remove.as_str(), ""))
 }
 
 fn main() {
