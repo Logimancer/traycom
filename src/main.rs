@@ -204,7 +204,7 @@ fn main() {
     let _ = event_loop.run(
         move |_event: winit::event::Event<()>,
               event_loop: &winit::event_loop::EventLoopWindowTarget<()>| {
-            event_loop.set_control_flow(ControlFlow::Poll);
+            event_loop.set_control_flow(ControlFlow::Wait);
             if let Ok(event) = menu_channel.try_recv() {
                 println!("{event:?}");
 
