@@ -21,7 +21,6 @@ use windows::{
 use winit::event_loop::{ControlFlow, EventLoopBuilder};
 
 //TODO (next version): Create log file function for errors
-//TODO (next version): Make code more rusty
 
 //Async wrapper for getting device info
 pub async fn serial_ports_device_info(
